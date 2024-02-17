@@ -7,3 +7,4 @@ src/.DS_Store
 html/version.json
 build
 html/data/shows.json
+html/data/shows-new.json

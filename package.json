@@ -26,7 +26,9 @@
     "tailwindcss-animated": "1.0.1",
     "typescript": "5.3.3",
     "ws": "8.15.1",
-    "xml2js": "^0.6.2"
+    "xml2js": "^0.6.2",
+    "youtube-transcript": "^1.0.6",
+    "ytpl": "^2.3.0"
   },
   "devDependencies": {
     "@types/compression": "^1.7.3",

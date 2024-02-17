@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import { Broadcast, Person, Show } from "../common/common";
 import { parseStringPromise } from "xml2js";
+import * as ytpl from "ytpl";
+import { YoutubeTranscript } from "youtube-transcript";
 
 import OpenAI from "openai";
 
@@ -28,7 +30,7 @@ function pickValue(channel: any, properties: string[], defaultValue: string = ""
 
 function getImageUrl(channel: any) {
     let imageUrl = channel.image && channel.image[0] && channel.image[0].url ? channel.image[0].url[0] : undefined;
-    if (imageUrl) return;
+    if (imageUrl) return imageUrl;
     return channel["itunes:image"] && channel["itunes:image"][0] && channel["itunes:image"][0].$ && channel["itunes:image"][0].$.href;
 }
 
@@ -70,7 +72,7 @@ async function extractPersons(show: Show, broadcasts: Broadcast[]) {
                 {
                     role: "system",
                     content:
-                        'You are a helpful and precise assistant. You will receive TV discussion show data formated as JSON.\n\nExtract all the moderator and guest names, as well as their titles, jobs, or functions for each show.\n\nHere is example data the user will provide to you.\n\n```\n[ {\n"title": "Konnte Andreas Babler überzeugen?",\n        "description": "Ein Jahr vor der geplanten Nationalratswahl im Herbst 2024 bittet PULS 24 die Parteichefin und -chefs in „Kolariks Luftburg“ im Prater, um mit Wählerinnen und Wählern über ihre Pläne für Österreich zu diskutieren. Konnte SPÖ-Chef Andreas Babler überzeugen? Darüber diskutieren in Pro und Contra Spezial drei hochkarätige Gäste."\n}, \n{\n"title": "Zu Gast: Glawischnig, Kdolsky und Stenzel",\n        "description": "Benkos Helfer \\n•\\tVöllig normaler Verdacht... \\n•\\tWar die Politik zu gutgläubig? \\n•\\tZahlen wir am Ende alle? \\nGesundheitssystem am Ende? \\n•\\tHaben wir eine 2-Klassen-Medizin? \\n•\\tWo sind die Ärzte und Pflegekräfte? \\n•\\tBrauchts einfach mehr Geld? \\nRasen: Auto weg! \\n•\\tAutos von Rasern werden versteigert"\n},\n{\n"title": "Talk vom 19.02.: Ein Jahr Krieg - Wann endet der europäische Alptraum?",\n        "description": "Wird die Neutralität durch die Teilnahme an den EU-Sanktionen infrage gestellt? Dürfen wir ukrainische Soldaten an Kampfpanzern ausbilden? Was sagt Selensky? Was sagt Joe Biden? Und schützt uns die Neutralität wirklich, sollte der Krieg weiter eskalieren?<br /><br />Darüber diskutiert Moderatorin Katrin Prähauser mit diesen Gästen: <ul><li>Paul Ronzheimer, stellvertretender Chefredakteur der \\"BILD\\"-Zeitung </li><li>Hajo Funke, Blogger und Politologe</li><li>Andrea Komlosy, Historikerin</li><li>Walter Feichtinger, Sicherheits-Experte und ehemaliger Brigadier</li></ul>"\n},\n{\n "title": "Talk vom 04.09.: \\"Steuermilliarden für Wien Energie: Versehen oder Versagen?\\" und \\"Wahlen im Krisenherbst: Denkzettel für die Politik?\\"",\n        "description": "Hat der unberechenbare Markt den Energiebetreiber ins Finanzdesaster getrieben? Oder stecken Missmanagement und politisches Versagen dahinter? Die Gäste bei Links. Rechts. Mitte:  <ul><li>Albert Fortell, Schauspieler - unterstützt Tassilo Wallentin in der BP-Wahl</li><li>Christoph Lütge, Wirtschaftsethiker und Kommentator</li><li>Gudula Walterskirchen, Publizistin</li><li>Barbara Toth, Journalistin „Der Falter“</li></ul>   Moderation: Katrin Prähauser",\n}\n]\n\nOutput the extracted persons for each show as follows:\n\n```\nnone,\nGlawischnig; Kdolsky; Stenzel\nKatrin Prähauser, Moderatorin; Paul Ronzheimer, stellvertretender Chefredakteur der "BILD"-Zeitung; Hajo Funke, Blogger und Politologe; Andrea Komlosy, Historikerin; Walter Feichtinger, Sicherheits-Experte und ehemaliger Brigadier\nAlbert Fortell, Schauspieler; Christoph Lütge, Wirtschaftsethiker und Kommentator; Gudula Walterskirchen, Publizistin; Barbara Toth, Journalistin „Der Falter“; Katrin Prähauser, Moderatorin\n```\n\nIMPORTANT: an empty array is emitted for shows where you could not extract any persons.\n\nIMPORTANT: Do not output anything other than the extracted persons.\n\nIMPORTANT: Do not forget to use new lines to separate the person lists.',
+                        'You are a helpful and precise assistant. You will receive TV discussion show data formated as JSON.\n\nExtract all the moderator and guest names, as well as their titles, jobs, or functions for each show.\n\nHere is example data the user will provide to you.\n\n```\n[ {\n"title": "Konnte Andreas Babler überzeugen?",\n        "description": "Ein Jahr vor der geplanten Nationalratswahl im Herbst 2024 bittet PULS 24 die Parteichefin und -chefs in „Kolariks Luftburg“ im Prater, um mit Wählerinnen und Wählern über ihre Pläne für Österreich zu diskutieren. Konnte SPÖ-Chef Andreas Babler überzeugen? Darüber diskutieren in Pro und Contra Spezial drei hochkarätige Gäste."\n}, \n{\n"title": "Zu Gast: Glawischnig, Kdolsky und Stenzel",\n        "description": "Benkos Helfer \\n•\\tVöllig normaler Verdacht... \\n•\\tWar die Politik zu gutgläubig? \\n•\\tZahlen wir am Ende alle? \\nGesundheitssystem am Ende? \\n•\\tHaben wir eine 2-Klassen-Medizin? \\n•\\tWo sind die Ärzte und Pflegekräfte? \\n•\\tBrauchts einfach mehr Geld? \\nRasen: Auto weg! \\n•\\tAutos von Rasern werden versteigert"\n},\n{\n"title": "Talk vom 19.02.: Ein Jahr Krieg - Wann endet der europäische Alptraum?",\n        "description": "Wird die Neutralität durch die Teilnahme an den EU-Sanktionen infrage gestellt? Dürfen wir ukrainische Soldaten an Kampfpanzern ausbilden? Was sagt Selensky? Was sagt Joe Biden? Und schützt uns die Neutralität wirklich, sollte der Krieg weiter eskalieren?<br /><br />Darüber diskutiert Moderatorin Katrin Prähauser mit diesen Gästen: <ul><li>Paul Ronzheimer, stellvertretender Chefredakteur der \\"BILD\\"-Zeitung </li><li>Hajo Funke, Blogger und Politologe</li><li>Andrea Komlosy, Historikerin</li><li>Walter Feichtinger, Sicherheits-Experte und ehemaliger Brigadier</li></ul>"\n},\n{\n "title": "Talk vom 04.09.: \\"Steuermilliarden für Wien Energie: Versehen oder Versagen?\\" und \\"Wahlen im Krisenherbst: Denkzettel für die Politik?\\"",\n        "description": "Hat der unberechenbare Markt den Energiebetreiber ins Finanzdesaster getrieben? Oder stecken Missmanagement und politisches Versagen dahinter? Die Gäste bei Links. Rechts. Mitte:  <ul><li>Albert Fortell, Schauspieler - unterstützt Tassilo Wallentin in der BP-Wahl</li><li>Christoph Lütge, Wirtschaftsethiker und Kommentator</li><li>Gudula Walterskirchen, Publizistin</li><li>Barbara Toth, Journalistin „Der Falter“</li></ul>   Moderation: Katrin Prähauser",\n}\n]\n\nOutput the extracted persons for each show as follows:\n\n```\nnone,\nGlawischnig; Kdolsky; Stenzel\nKatrin Prähauser, Moderatorin; Paul Ronzheimer, stellvertretender Chefredakteur der "BILD"-Zeitung; Hajo Funke, Blogger und Politologe; Andrea Komlosy, Historikerin; Walter Feichtinger, Sicherheits-Experte und ehemaliger Brigadier\nAlbert Fortell, Schauspieler; Christoph Lütge, Wirtschaftsethiker und Kommentator; Gudula Walterskirchen, Publizistin; Barbara Toth, Journalistin „Der Falter“; Katrin Prähauser, Moderatorin\n```\n\nIMPORTANT: an empty array is emitted for shows where you could not extract any persons.\n\nIMPORTANT: Do not output anything other than the extracted persons.\n\nIMPORTANT: Separate the person lists for each show via a new line in your output.',
                 },
                 {
                     role: "user",
@@ -108,6 +110,24 @@ async function extractPersons(show: Show, broadcasts: Broadcast[]) {
                         });
                     }
                 }
+                for (const moderator of broadcast.moderators) {
+                    if (!moderator.functions) moderator.functions = [];
+                    if (moderator.name.includes(",")) {
+                        const parts = moderator.name.split(",");
+                        moderator.name = parts.splice(0, 1)[0];
+                        moderator.functions = parts;
+                    }
+                    moderator.functions = moderator.functions.map((func) => func.trim());
+                }
+                for (const guest of broadcast.guests) {
+                    if (!guest.functions) guest.functions = [];
+                    if (guest.name.includes(",")) {
+                        const parts = guest.name.split(",");
+                        guest.name = parts.splice(0, 1)[0];
+                        guest.functions = parts;
+                    }
+                    guest.functions = guest.functions.map((func) => func.trim());
+                }
             }
         }
     } catch (e) {
@@ -138,6 +158,7 @@ export async function crawlPodcastRss(oldBroadcasts: Map<string, Broadcast>, url
                 const oldBroadcast = oldBroadcasts.get(broadcast.url)!;
                 broadcast.guests = oldBroadcast.guests;
                 broadcast.moderators = oldBroadcast.moderators;
+                oldBroadcasts.delete(broadcast.url);
             }
             show.broadcasts.push(broadcast);
         }
@@ -156,39 +177,94 @@ export async function crawlPodcastRss(oldBroadcasts: Map<string, Broadcast>, url
     }
 }
 
+export async function crawlYoutubePlaylist(oldBroadcasts: Map<string, Broadcast>, playlistId: string) {
+    try {
+        // Fetch playlist information
+        const playlist = await ytpl.default(playlistId);
+        const show: Show = {
+            author: playlist.author.name,
+            description: playlist.description ?? "",
+            title: playlist.title,
+            url: playlist.url,
+            imageUrl: playlist.bestThumbnail.url ?? undefined,
+            broadcasts: [],
+        };
+
+        let processed = 0;
+        const toProcess: Broadcast[] = [];
+        for (const video of playlist.items) {
+            let description = "";
+            let guests: Person[] = [];
+            let moderators: Person[] = [];
+            if (oldBroadcasts.has(video.url)) {
+                const oldBroadcast = oldBroadcasts.get(video.url)!;
+                description = oldBroadcast.description;
+                guests = oldBroadcast.guests;
+                moderators = oldBroadcast.moderators;
+                oldBroadcasts.delete(video.url);
+            } else {
+                try {
+                    const transcript = await YoutubeTranscript.fetchTranscript(video.id);
+                    description = transcript
+                        .map((entry) => entry.text)
+                        .join(" ")
+                        .slice(0, 500);
+                } catch (error) {
+                    // Ignore
+                }
+            }
+            const broadcast: Broadcast = {
+                url: video.url,
+                date: "", // FIXME
+                title: video.title,
+                description,
+                moderators,
+                guests,
+                mediaUrl: video.url,
+            };
+            show.broadcasts.push(broadcast);
+            toProcess.push(broadcast);
+            if (toProcess.length == 5) {
+                await extractPersons(show, toProcess);
+                toProcess.length = 0;
+            }
+            console.log(`${show.title} - ${++processed}/${show.broadcasts.length}`);
+        }
+        if (toProcess.length > 0) {
+            await extractPersons(show, toProcess);
+        }
+
+        return show;
+    } catch (error) {
+        console.error("Failed to fetch playlist details:", error);
+    }
+}
+
 export async function crawl(): Promise<Show[]> {
     console.log("Starting crawl");
     const oldBroadcasts = new Map<string, Broadcast>();
+    let oldShows: Show[] = [];
     if (fs.existsSync("/data/shows.json")) {
-        const oldShows = JSON.parse(fs.readFileSync("/data/shows.json", "utf-8")) as Show[];
+        oldShows = JSON.parse(fs.readFileSync("/data/shows.json", "utf-8")) as Show[];
         for (const show of oldShows) {
             for (const broadcast of show.broadcasts) {
-                for (const moderator of broadcast.moderators) {
-                    if (!moderator.functions) moderator.functions = [];
-                    if (moderator.name.includes(",")) {
-                        const parts = moderator.name.split(",");
-                        moderator.name = parts.splice(0, 1)[0];
-                        moderator.functions = parts;
-                    }
-                    delete (moderator as any).normalizedName;
-                    moderator.functions = moderator.functions.map((func) => func.trim());
-                }
-                for (const guest of broadcast.guests) {
-                    if (!guest.functions) guest.functions = [];
-                    if (guest.name.includes(",")) {
-                        const parts = guest.name.split(",");
-                        guest.name = parts.splice(0, 1)[0];
-                        guest.functions = parts;
-                    }
-                    delete (guest as any).normalizedName;
-                    guest.functions = guest.functions.map((func) => func.trim());
-                }
                 oldBroadcasts.set(broadcast.url, broadcast);
             }
         }
     }
 
     const shows: Show[] = [];
+
+    const youtubePlaylists = [
+        "PLgLaRsInxwnad9EE8NmTNvdXY4VYudh0n", // Fellner Live & Isabella Daniel
+    ];
+    for (const playlist of youtubePlaylists) {
+        const show = await crawlYoutubePlaylist(oldBroadcasts, playlist);
+        if (show) {
+            shows.push(show);
+            fs.writeFileSync("/data/shows-new.json", JSON.stringify(shows, null, 2));
+        }
+    }
 
     const podcasts = [
         // ORF
@@ -206,9 +282,9 @@ export async function crawl(): Promise<Show[]> {
 
     for (const podcast of podcasts) {
         shows.push(await crawlPodcastRss(oldBroadcasts, podcast));
-        fs.writeFileSync("/data/shows.json", JSON.stringify(shows, null, 2));
+        fs.writeFileSync("/data/shows-new.json", JSON.stringify(shows, null, 2));
     }
-
+    fs.writeFileSync("/data/shows.json", JSON.stringify(shows, null, 2));
     console.log("Crawl complete");
     return shows;
 }
