@@ -1,7 +1,7 @@
 {
-    "name": "__app_name__",
-    "short_name": "__app_name__",
-    "description": "__app_description__",
+    "name": "mediamonitor",
+    "short_name": "mediamonitor",
+    "description": "Project to monitor austrian TV discussion shows, their topics, and guests.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#000c15",

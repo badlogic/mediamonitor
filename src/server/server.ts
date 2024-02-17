@@ -5,45 +5,26 @@ import cors from "cors";
 import express from "express";
 import * as fs from "fs";
 import * as http from "http";
-import multer from "multer";
 import WebSocket, { WebSocketServer } from "ws";
-import { Pool } from "pg";
-import { sleep } from "../utils/utils.js";
-const upload = multer({ storage: multer.memoryStorage() });
+import { crawl } from "./crawl";
 
 const port = process.env.PORT ?? 3333;
-const dbName = process.env.DATABASE;
-if (!dbName) {
-    console.error("Environment variable DATABASE missing");
-    process.exit(-1);
-}
-const dbUser = process.env.DATABASE_USER;
-if (!dbUser) {
-    console.error("Environment variable DATABASE_USER missing");
-    process.exit(-1);
-}
-const dbPassword = process.env.DATABASE_PASSWORD;
-if (!dbPassword) {
-    console.error("Environment variable DATABASE_PASSWORD missing");
+const orf = process.env.ORF_API_PASSWORD;
+const openai = process.env.OPENAI_KEY;
+
+if (!orf) {
+    console.error("No ORF_API_PASSWORD given");
     process.exit(-1);
 }
 
-const pool = new Pool({
-    host: "db",
-    database: dbName,
-    user: dbUser,
-    password: dbPassword,
-    port: 5432,
-});
+if (!openai) {
+    console.error("No OPENAI_KEY given");
+    process.exit(-1);
+}
 
-(async () => {
-    const result = await connectWithRetry(5, 3000);
-    if (result instanceof Error) {
-        process.exit(-1);
-    }
-
-    if (!fs.existsSync("docker/data")) {
-        fs.mkdirSync("docker/data");
+let shows = (async () => {
+    if (!fs.existsSync("/data")) {
+        fs.mkdirSync("/data");
     }
 
     const app = express();
@@ -62,30 +43,13 @@ const pool = new Pool({
     });
 
     setupLiveReload(server);
-})();
 
-async function connectWithRetry(maxRetries = 5, interval = 2000) {
-    let retries = 0;
-    while (retries < maxRetries) {
-        try {
-            const client = await pool.connect();
-            try {
-                const result = await client.query("SELECT NOW()");
-                console.log("Query result:", result.rows);
-                return undefined; // Successful connection, exit the function
-            } finally {
-                client.release();
-            }
-        } catch (err) {
-            console.error("Connection attempt failed:", err);
-            retries++;
-            if (retries === maxRetries) {
-                return new Error("Failed to connect to the database after retries");
-            }
-            await sleep(interval);
-        }
-    }
-}
+    const update = () => {
+        crawl();
+        setTimeout(update, 24 * 60 * 60 * 1000);
+    };
+    update();
+})();
 
 function setupLiveReload(server: http.Server) {
     const wss = new WebSocketServer({ server });
