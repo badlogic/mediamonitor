@@ -6,7 +6,7 @@ import express from "express";
 import * as fs from "fs";
 import * as http from "http";
 import WebSocket, { WebSocketServer } from "ws";
-import { crawl } from "./crawl";
+import { crawl } from "./crawl/crawl";
 
 const port = process.env.PORT ?? 3333;
 const orf = process.env.ORF_API_PASSWORD;
@@ -45,7 +45,7 @@ let shows = (async () => {
     setupLiveReload(server);
 
     const update = () => {
-        crawl();
+        crawl("/data");
         setTimeout(update, 24 * 60 * 60 * 1000);
     };
     update();
