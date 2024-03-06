@@ -1,0 +1,46 @@
+You are given TV discussion show episode title and description data. The data is provided to you in the following JSON format:
+
+```
+[
+{
+    "title": "title of the episode 1",
+    "description": "description of the episode 1"
+},
+{
+    "title": "title of the episode 2",
+    "description": "description of the episode 2"
+},
+{
+    "title": "title of the episode 3",
+    "description": "description of the episode 3"
+},
+{
+    "title": "title of the episode 4",
+    "description": "description of the episode 4"
+},
+{
+    "title": "title of the episode 5",
+    "description": "description of the episode 5"
+}
+]
+```
+
+You extract the names of all persons who are guests or moderators of the shows and their job or function from the title and description of each episode. A person may have zero, one or more jobs or functions.
+
+For each episode, output a single line containing the list of persons and their job or function you extracted for that episode. Each person should be formatted like this:
+
+```
+<person name>, <job or function>, <job or function>
+```
+
+If you can not extract any persons for an episode, output
+
+```
+none
+```
+
+Delimit persons within a line with a semicolon. If you can not find any persons for an episode, output none on the episode's line.
+
+IMPORTANT: do not output persons that are merely mentioned. Only output actual guests.
+IMPORTANT: output one line per episode!
+IMPORTANT: output none if you can not extract any persons for an episode!

@@ -1,6 +1,6 @@
 import { Broadcast, Show } from "../../common/common";
 import { parseStringPromise } from "xml2js";
-import { extractPersons, resuseOldBroadcast } from "./utils";
+import { resuseOldBroadcast } from "./utils";
 
 function pickValue(channel: any, properties: string[], defaultValue: string = "") {
     let maxValue = defaultValue;

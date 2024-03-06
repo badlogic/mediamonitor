@@ -41,12 +41,15 @@ export async function crawl(baseDir: string): Promise<Show[]> {
     const shows: Show[] = [];
 
     // YouTube Playlists
-    const youtubePlaylists: string[] = [
-        "PLgLaRsInxwnad9EE8NmTNvdXY4VYudh0n", // Fellner Live & Isabella Daniel
+    const youtubePlaylists: { id: string; useTranscript: boolean; maxVideos: number }[] = [
+        { id: "PLgLaRsInxwnad9EE8NmTNvdXY4VYudh0n", useTranscript: true, maxVideos: 100 }, // Fellner Live & Isabella Daniel
+        { id: "PL_lFyO5-FNuGOTpDhbKB7KwarkUCr4N9k", useTranscript: false, maxVideos: 100 }, // KroneTV Club 3
+        { id: "PL_lFyO5-FNuENyxEp9LhMuHQJrtauxyGs", useTranscript: false, maxVideos: 100 }, // KroneTV Das Duell
+        { id: "PL5JhRvxqnuIoxukO8iOJGcXWtRV6plTHk", useTranscript: false, maxVideos: 100 }, // KurierTV Checkpoint
     ];
     for (const playlist of youtubePlaylists) {
-        console.log(">>> Extracting YouTube playlist " + playlist);
-        const show = await crawlYoutubePlaylist(oldBroadcasts, playlist);
+        console.log(">>> Extracting YouTube playlist " + playlist.id);
+        const show = await crawlYoutubePlaylist(oldBroadcasts, playlist.id, playlist.useTranscript, playlist.maxVideos);
         if (show) {
             shows.push(show);
             fs.writeFileSync(`${baseDir}/shows-new.json`, JSON.stringify(shows, null, 2));
@@ -59,6 +62,7 @@ export async function crawl(baseDir: string): Promise<Show[]> {
         "https://podcast.orf.at/podcast/tv/tv_zib2/tv_zib2.xml", // ZIB 2
         "https://podcast.orf.at/podcast/tv/tv_pressestunde/tv_pressestunde.xml", // Pressestunde
         "https://podcast.orf.at/podcast/tv/tv_reportinterviews/tv_reportinterviews.xml", // Report Interviews
+        "https://podcast.orf.at/podcast/oe1/oe1_imjournalzugast/oe1_imjournalzugast.xml", // Im Ö1 Journal zu Gast
         // Servus TV
         "https://www.spreaker.com/show/5965125/episodes/feed", // Talk im Hangar 7
         "https://www.spreaker.com/show/5965147/episodes/feed", // Links. Rechts. Mitte - Duell der Meinungsmacher
@@ -66,6 +70,9 @@ export async function crawl(baseDir: string): Promise<Show[]> {
         "https://wildumstritten.podigee.io/feed/mp3", // Wild umstritten
         "https://pro-und-contra.podigee.io/feed/mp3", // Pro & Contra
         "https://milborn.podigee.io/feed/mp3", // Milborn
+        // ATV
+        "https://atvdertalk.podigee.io/feed/mp3", // ATV Aktuell - Der Talk
+        "https://atv-aktuell-die-woche.podigee.io/feed/mp3", // ATV Aktuell - Die Woche
     ];
 
     for (const podcast of podcasts) {
@@ -97,6 +104,7 @@ export async function crawl(baseDir: string): Promise<Show[]> {
             );
             processed += batch.length;
             console.log(`${show.title}: ${processed}/${show.broadcasts.length}`);
+            fs.writeFileSync(`${baseDir}/shows-new.json`, JSON.stringify(shows, null, 2));
         }
     }
 

@@ -22,6 +22,7 @@ services:
             PORT: 3333
             ORF_API_PASSWORD: ${MEDIA_MONITOR_ORF_API_PASSWORD}
             OPENAI_KEY: ${MEDIA_MONITOR_OPENAI_KEY}
+            YOUTUBE_KEY: ${MEDIA_MONITOR_YOUTUBE_KEY}
         volumes:
             - ../html/data:/data
             - ../:/app

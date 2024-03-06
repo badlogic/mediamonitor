@@ -7,7 +7,7 @@ let watch = process.argv.length >= 3 && process.argv[2] == "--watch";
 const config = {
     entryPoints: {
         server: "src/server/server.ts",
-        vectorize: "src/cli/vectorize.ts",
+        test: "src/cli/test.ts",
     },
     bundle: true,
     sourcemap: true,
