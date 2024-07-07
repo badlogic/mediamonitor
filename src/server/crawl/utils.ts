@@ -20,7 +20,7 @@ export async function extractPersons(show: Show, broadcasts: Broadcast[]) {
             2
         );
         const response = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
+            model: "gpt-4o-2024-05-13",
             messages: [
                 {
                     role: "system",

@@ -46,7 +46,7 @@ function getBroadcast(item: any): Broadcast {
     return broadcast;
 }
 
-export async function crawlPodcastRss(oldBroadcasts: Map<string, { show: Show; broadcast: Broadcast }>, url: string): Promise<Show> {
+export async function crawlPodcastRss(oldBroadcasts: Map<string, { show: Show; broadcast: Broadcast }>, url: string): Promise<Show | undefined> {
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error();
@@ -71,6 +71,6 @@ export async function crawlPodcastRss(oldBroadcasts: Map<string, { show: Show; b
         return show;
     } catch (e) {
         console.error("Could not crawl podcast RSS feed " + url, e);
-        throw new Error("Could not crawl podcast RSS feed " + url);
+        return undefined;
     }
 }

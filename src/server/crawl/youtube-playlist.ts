@@ -93,7 +93,7 @@ export async function crawlYoutubePlaylist(
         if (useTranscript) {
             for (const video of show.broadcasts) {
                 const oldBroadcast = resuseOldBroadcast(oldBroadcasts, video.url);
-                if (oldBroadcast) continue;
+                if (oldBroadcast && !useTranscript) continue;
                 try {
                     const videoId = video.url.split("=")[1];
                     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
@@ -109,5 +109,6 @@ export async function crawlYoutubePlaylist(
         return show;
     } catch (error) {
         console.error("Failed to fetch playlist details:", error);
+        return undefined;
     }
 }

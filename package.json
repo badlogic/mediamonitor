@@ -30,9 +30,10 @@
     "remixicon": "4.1.0",
     "tailwindcss-animated": "1.0.1",
     "typescript": "5.3.3",
+    "write-excel-file": "^2.0.2",
     "ws": "8.15.1",
     "xml2js": "^0.6.2",
-    "youtube-transcript": "^1.0.6",
+    "youtube-transcript": "1.2.1",
     "ytpl": "^2.3.0"
   },
   "devDependencies": {

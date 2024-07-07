@@ -3,6 +3,7 @@ import { Broadcast, Show } from "../../common/common";
 import { crawlYoutubePlaylist } from "./youtube-playlist";
 import { crawlPodcastRss } from "./podcast";
 import { extractPersons } from "./utils";
+import writeXlsxFile from "write-excel-file/node";
 
 function printStats(shows: Show[]) {
     console.log(">>> Statistics");
@@ -31,6 +32,7 @@ export async function crawl(baseDir: string): Promise<Show[]> {
     if (fs.existsSync(`${baseDir}/shows.json`)) {
         const oldShowsList = JSON.parse(fs.readFileSync(`${baseDir}/shows.json`, "utf-8")) as Show[];
         for (const show of oldShowsList) {
+            if (show.url == "https://www.youtube.com/playlist?list=PL_lFyO5-FNuENyxEp9LhMuHQJrtauxyGs") continue;
             oldShows.set(show.url, show);
             for (const broadcast of show.broadcasts) {
                 oldBroadcasts.set(broadcast.url, { show: show, broadcast });
@@ -42,10 +44,11 @@ export async function crawl(baseDir: string): Promise<Show[]> {
 
     // YouTube Playlists
     const youtubePlaylists: { id: string; useTranscript: boolean; maxVideos: number }[] = [
-        { id: "PLgLaRsInxwnad9EE8NmTNvdXY4VYudh0n", useTranscript: true, maxVideos: 100 }, // Fellner Live & Isabella Daniel
+        // { id: "PLgLaRsInxwnad9EE8NmTNvdXY4VYudh0n", useTranscript: false, maxVideos: 100 }, // Fellner Live & Isabella Daniel
         { id: "PL_lFyO5-FNuGOTpDhbKB7KwarkUCr4N9k", useTranscript: false, maxVideos: 100 }, // KroneTV Club 3
-        { id: "PL_lFyO5-FNuENyxEp9LhMuHQJrtauxyGs", useTranscript: false, maxVideos: 100 }, // KroneTV Das Duell
+        // { id: "PL_lFyO5-FNuENyxEp9LhMuHQJrtauxyGs", useTranscript: false, maxVideos: 100 }, // KroneTV Das Duell
         { id: "PL5JhRvxqnuIoxukO8iOJGcXWtRV6plTHk", useTranscript: false, maxVideos: 100 }, // KurierTV Checkpoint
+        { id: "PL_lFyO5-FNuHwI4GJfVQdaJyglD0eb5V8", useTranscript: false, maxVideos: 100 }, // KroneTV Rainer Nowak - der Talk
     ];
     for (const playlist of youtubePlaylists) {
         console.log(">>> Extracting YouTube playlist " + playlist.id);
@@ -77,19 +80,32 @@ export async function crawl(baseDir: string): Promise<Show[]> {
 
     for (const podcast of podcasts) {
         console.log(">>> Extracting podcast " + podcast);
-        shows.push(await crawlPodcastRss(oldBroadcasts, podcast));
-        fs.writeFileSync(`${baseDir}/shows-new.json`, JSON.stringify(shows, null, 2));
+        const show = await crawlPodcastRss(oldBroadcasts, podcast);
+        if (show) {
+            shows.push(show);
+            fs.writeFileSync(`${baseDir}/shows-new.json`, JSON.stringify(shows, null, 2));
+        }
     }
 
     // Merge old shows/broadcasts into new data so we don't lose history
     console.log(">>> Merging old shows and broadcasts");
     for (const show of shows) {
         if (oldShows.has(show.url)) {
-            show.broadcasts.push(...oldShows.get(show.url)!.broadcasts);
+            const oldBroadcasts = oldShows.get(show.url)!.broadcasts;
+            const newBroadcasts = new Set<string>(show.broadcasts.map((broadcast) => broadcast.url));
+            show.broadcasts.push(...oldBroadcasts.filter((broadcast) => !newBroadcasts.has(broadcast.url)));
             oldShows.delete(show.url);
         }
+        show.broadcasts.sort((a, b) => b.date.localeCompare(a.date));
     }
     shows.push(...oldShows.values());
+
+    // Limit to broadcasts >= 2024
+    for (const show of shows) {
+        show.broadcasts = show.broadcasts
+            .filter((broadcast) => new Date(broadcast.date).getFullYear() >= 2024)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
 
     // Extract guests and moderators
     console.log(">>> Extracting guests and moderators");
@@ -111,5 +127,89 @@ export async function crawl(baseDir: string): Promise<Show[]> {
     fs.writeFileSync(`${baseDir}/shows.json`, JSON.stringify(shows, null, 2));
     printStats(shows);
     console.log("Crawl complete");
+
+    // Export to Excel
+    await exportExcel(baseDir, shows);
     return shows;
+}
+
+async function exportExcel(baseDir: string, shows: Show[]) {
+    const header = [
+        {
+            value: "showAuthor",
+            fontWeight: "bold",
+        },
+        {
+            value: "showTitle",
+            fontWeight: "bold",
+        },
+        {
+            value: "showUrl",
+            fontWeight: "bold",
+        },
+        {
+            value: "bcTitle",
+            fontWeight: "bold",
+        },
+        {
+            value: "bcDate",
+            fontWeight: "bold",
+        },
+        {
+            value: "bcDescription",
+            fontWeight: "bold",
+        },
+        {
+            value: "bcUrl",
+            fontWeight: "bold",
+        },
+        {
+            value: "personName",
+            fontWeight: "bold",
+        },
+        {
+            value: "personFunction",
+            fontWeight: "bold",
+        },
+        {
+            value: "isGuest",
+            fontWeight: "bold",
+        },
+    ];
+
+    const rows = [];
+    rows.push(header);
+    for (const show of shows) {
+        for (const broadcast of show.broadcasts) {
+            for (const person of broadcast.moderators) {
+                rows.push([
+                    { value: show.author },
+                    { value: show.title },
+                    { value: show.url },
+                    { value: broadcast.title },
+                    { value: new Date(broadcast.date), format: "yyyy/mm/dd" },
+                    { value: broadcast.description },
+                    { value: broadcast.url },
+                    { value: person.name },
+                    { value: "Moderator:in" },
+                    { value: false },
+                ]);
+            }
+            for (const person of broadcast.guests) {
+                rows.push([
+                    { value: show.author },
+                    { value: show.title },
+                    { value: show.url },
+                    { value: broadcast.title },
+                    { value: new Date(broadcast.date), format: "yyyy/mm/dd" },
+                    { value: broadcast.description },
+                    { value: broadcast.url },
+                    { value: person.name },
+                    { value: person.functions.join(", ") },
+                    { value: true },
+                ]);
+            }
+        }
+    }
+    await writeXlsxFile(rows as any, { filePath: baseDir + "/persons.xlsx", stickyRowsCount: 1 });
 }
