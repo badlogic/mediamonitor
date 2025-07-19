@@ -10,3 +10,4 @@ html/data/shows.json
 html/data/shows-new.json
 html/persons.json
 html/data/persons.json
+docker/.env
